@@ -48,6 +48,7 @@ class AppStrings {
       'scanForSensor': 'Scan for KrishiDrishti Sensor',
       'scanButton': 'Scan Sensor',
       'selectSensor': 'Select Sensor',
+      'history': 'History',
       'selectLanguagePrompt': 'Select your preferred language',
       'about': 'About KrishiDrishti',
       'aboutBody': 'KrishiDrishti helps farmers understand their soil and crops with simple, actionable advice — no lab visit required.',
@@ -104,6 +105,7 @@ class AppStrings {
       'scanForSensor': 'KrishiDrishti सेंसर स्कैन करें',
       'scanButton': 'सेंसर स्कैन करें',
       'selectSensor': 'सेंसर चुनें',
+      'history': 'इतिहास',
       'selectLanguagePrompt': 'अपनी पसंदीदा भाषा चुनें',
       'about': 'KrishiDrishti के बारे में',
       'aboutBody': 'KrishiDrishti किसानों को उनकी मिट्टी और फसलों को सरल, व्यावहारिक सलाह के साथ समझने में मदद करता है — कोई लेब टेस्ट आवश्यक नहीं।',
@@ -160,6 +162,7 @@ class AppStrings {
       'scanForSensor': 'KrishiDrishti सेन्सर शोधा',
       'scanButton': 'सेन्सर स्कॅन करा',
       'selectSensor': 'सेन्सर निवडा',
+      'history': 'इतिहास',
       'selectLanguagePrompt': 'आपली पसंतीची भाषा निवडा',
       'about': 'KrishiDrishti बद्दल',
       'aboutBody': 'KrishiDrishti शेतकऱ्यांना त्यांच्या माती आणि पीकाबद्दल साधे, कृतीशील सल्ले देऊन मदत करते — कोणतीही प्रयोगशाळा चाचणी आवश्यक नाही.',
@@ -222,6 +225,7 @@ class AppStrings {
   String get scanForSensor => _text('scanForSensor');
   String get scanButton => _text('scanButton');
   String get selectSensor => _text('selectSensor');
+  String get history => _text('history');
   String get selectLanguagePrompt => _text('selectLanguagePrompt');
   String get about => _text('about');
   String get aboutBody => _text('aboutBody');

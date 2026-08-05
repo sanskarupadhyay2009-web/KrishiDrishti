@@ -6,6 +6,7 @@ import '../providers/language_provider.dart';
 import 'assistant_screen.dart';
 import 'crop_health_screen.dart';
 import 'dashboard_screen.dart';
+import 'history_screen.dart';
 import 'settings_screen.dart';
 
 class NavigationShell extends StatefulWidget {
@@ -20,6 +21,7 @@ class _NavigationShellState extends State<NavigationShell> {
 
   static const List<Widget> _screens = [
     DashboardScreen(),
+    HistoryScreen(),
     CropHealthScreen(),
     AssistantScreen(),
     SettingsScreen(),
@@ -44,6 +46,11 @@ class _NavigationShellState extends State<NavigationShell> {
             icon: const Icon(Icons.dashboard_outlined),
             selectedIcon: const Icon(Icons.dashboard),
             label: strings.dashboard,
+          ),
+          NavigationDestination(
+            icon: const Icon(Icons.history_outlined),
+            selectedIcon: const Icon(Icons.history),
+            label: strings.history,
           ),
           NavigationDestination(
             icon: const Icon(Icons.camera_alt_outlined),

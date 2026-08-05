@@ -37,14 +37,18 @@ class AssistantProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
+      debugPrint('AssistantProvider: sending user question to Gemini.');
       final response = await _geminiService.askContextAwareAdvice(
         sensorData: currentData,
         weatherData: weather,
         userQuestion: userQuestion.trim(),
         languageCode: languageCode,
       );
+      debugPrint('AssistantProvider: Gemini response received length=${response.length}.');
       addAiMessage(response);
-    } catch (_) {
+    } catch (e, stackTrace) {
+      debugPrint('AssistantProvider: Gemini request failed: $e');
+      debugPrint(stackTrace.toString());
       addAiMessage(
         languageCode == 'hi'
             ? 'मुझे अभी उत्तर देने में समस्या आ रही है। कृपया बाद में पुनः प्रयास करें।'

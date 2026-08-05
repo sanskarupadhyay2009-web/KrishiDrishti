@@ -10,8 +10,17 @@ import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import '../models/sensor_data.dart';
 
 class SensorProvider extends ChangeNotifier {
-  SensorData _currentData = const SensorData(nitrogen: 20, phosphorus: 15, potassium: 25, moisture: 35, ph: 6.8);
+  SensorData _currentData = SensorData(
+    timestamp: DateTime.now(),
+    nitrogen: 20,
+    phosphorus: 15,
+    potassium: 25,
+    moisture: 35,
+    ph: 6.8,
+    temperature: 26.0,
+  );
   bool _isConnected = false;
+  final List<SensorData> _history = [];
   bool _isDebugMode = true;
   String _statusMessage = 'Initializing';
   StreamSubscription<List<ScanResult>>? _scanSubscription;
@@ -21,6 +30,7 @@ class SensorProvider extends ChangeNotifier {
   Timer? _mockTimer;
 
   SensorProvider() {
+    _addToHistory(_currentData);
     _startDebugMode();
   }
 
@@ -28,6 +38,7 @@ class SensorProvider extends ChangeNotifier {
   bool get isConnected => _isConnected;
   bool get isDebugMode => _isDebugMode;
   String get statusMessage => _statusMessage;
+  List<SensorData> get history => List.unmodifiable(_history);
 
   void toggleDebugMode(bool enabled) {
     _isDebugMode = enabled;
@@ -76,12 +87,15 @@ class SensorProvider extends ChangeNotifier {
     _mockTimer = Timer.periodic(const Duration(seconds: 3), (_) {
       final random = Random();
       _currentData = SensorData(
+        timestamp: DateTime.now(),
         nitrogen: 10 + random.nextDouble() * 50,
         phosphorus: 10 + random.nextDouble() * 45,
         potassium: 10 + random.nextDouble() * 50,
         moisture: 20 + random.nextDouble() * 30,
         ph: 6.0 + random.nextDouble() * 1.5,
+        temperature: 20 + random.nextDouble() * 10,
       );
+      _addToHistory(_currentData);
       notifyListeners();
     });
   }
@@ -157,11 +171,13 @@ class SensorProvider extends ChangeNotifier {
       final payload = utf8.decode(bytes);
       final json = jsonDecode(payload) as Map<String, dynamic>;
       _currentData = SensorData.fromJson(json);
+      _addToHistory(_currentData);
       _statusMessage = 'BLE Connected';
       _isConnected = true;
       notifyListeners();
-    } catch (_) {
+    } catch (e) {
       _statusMessage = 'Invalid sensor data';
+      debugPrint('Sensor parse error: $e');
       notifyListeners();
     }
   }
@@ -189,6 +205,13 @@ class SensorProvider extends ChangeNotifier {
     _connectedDevice = null;
     _isConnected = false;
     FlutterBluePlus.stopScan();
+  }
+
+  void _addToHistory(SensorData data) {
+    _history.insert(0, data);
+    if (_history.length > 20) {
+      _history.removeLast();
+    }
   }
 
   @override

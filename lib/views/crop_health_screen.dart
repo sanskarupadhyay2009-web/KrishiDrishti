@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import '../providers/crop_health_provider.dart';
 import '../providers/language_provider.dart';
 import '../services/gemini_service.dart';
 
@@ -29,16 +30,26 @@ class _CropHealthScreenState extends State<CropHealthScreen> {
     }
   }
 
-  Future<void> _analyzeImage(String languageCode) async {
+  Future<void> _analyzeImage(String languageCode, String fallbackError) async {
     if (_selectedImage == null) {
       return;
     }
+    final bytes = await _selectedImage!.readAsBytes();
+    if (bytes.isEmpty) {
+      setState(() {
+        _diagnosis = fallbackError;
+      });
+      return;
+    }
+
     setState(() {
       _isAnalyzing = true;
       _diagnosis = '';
     });
     final service = GeminiService();
     final response = await service.diagnoseCropImage(_selectedImage!, languageCode);
+    if (!mounted) return;
+    context.read<CropHealthProvider>().updateDiagnosis(response);
     setState(() {
       _diagnosis = response;
       _isAnalyzing = false;
@@ -88,7 +99,7 @@ class _CropHealthScreenState extends State<CropHealthScreen> {
           ElevatedButton(
             onPressed: _selectedImage == null || _isAnalyzing
                 ? null
-                : () => _analyzeImage(languageCode),
+                : () => _analyzeImage(languageCode, strings.analysisError),
             child: Text(strings.analyzeCropHealth),
           ),
           const SizedBox(height: 20),

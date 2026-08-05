@@ -2,9 +2,13 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../providers/crop_health_provider.dart';
 import '../providers/language_provider.dart';
 import '../providers/sensor_provider.dart';
+import '../services/recommendation_service.dart';
 import '../services/weather_service.dart';
+import '../widgets/recommendation_card.dart';
+import '../widgets/simple_line_chart.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -16,11 +20,23 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   Map<String, dynamic> _weather = {'temp': 30.2, 'description': 'Partly Cloudy', 'rain_prob': '20%'};
   bool _isLoadingWeather = true;
+  bool _isLoadingRecommendations = true;
+  bool _hasLoadedRecommendations = false;
+  List<Recommendation> _recommendations = [];
 
   @override
   void initState() {
     super.initState();
     _loadWeather();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_hasLoadedRecommendations) {
+      _hasLoadedRecommendations = true;
+      _loadRecommendations();
+    }
   }
 
   Future<void> _loadWeather() async {
@@ -32,6 +48,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
         _isLoadingWeather = false;
       });
     }
+  }
+
+  Future<void> _loadRecommendations() async {
+    final sensorProvider = Provider.of<SensorProvider>(context, listen: false);
+    final cropProvider = Provider.of<CropHealthProvider>(context, listen: false);
+    final service = RecommendationService();
+
+    setState(() {
+      _isLoadingRecommendations = true;
+    });
+
+    final results = await service.generateRecommendations(
+      sensorData: sensorProvider.currentData,
+      cropHealthSummary: cropProvider.lastDiagnosis,
+      weatherData: _weather,
+      languageCode: Provider.of<LanguageProvider>(context, listen: false).languageCode,
+    );
+
+    if (!mounted) return;
+    setState(() {
+      _recommendations = results;
+      _isLoadingRecommendations = false;
+    });
   }
 
   @override
@@ -103,6 +142,45 @@ class _DashboardScreenState extends State<DashboardScreen> {
               60,
               Colors.brown,
             ),
+            const SizedBox(height: 20),
+            if (sensorProvider.history.isNotEmpty) ...[
+              Text('Sensor Trends', style: Theme.of(context).textTheme.titleLarge),
+              const SizedBox(height: 12),
+              SimpleLineChart(
+                title: 'Moisture',
+                values: sensorProvider.history.map((reading) => reading.moisture).toList().reversed.toList(),
+                color: Colors.blue,
+                unit: '%',
+              ),
+              const SizedBox(height: 12),
+              SimpleLineChart(
+                title: 'Temperature',
+                values: sensorProvider.history.map((reading) => reading.temperature).toList().reversed.toList(),
+                color: Colors.orange,
+                unit: '°C',
+              ),
+              const SizedBox(height: 12),
+              SimpleLineChart(
+                title: 'pH',
+                values: sensorProvider.history.map((reading) => reading.ph).toList().reversed.toList(),
+                color: Colors.green,
+                unit: '',
+              ),
+            ],
+            const SizedBox(height: 20),
+            Text('Recommendations', style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 12),
+            if (_isLoadingRecommendations)
+              const Center(child: CircularProgressIndicator())
+            else if (_recommendations.isEmpty)
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text('No recommendations available yet.'),
+                ),
+              )
+            else
+              ..._recommendations.map((recommendation) => RecommendationCard(recommendation: recommendation)),
             const SizedBox(height: 20),
             _buildRuleEngineBanner(sensor, strings),
           ],

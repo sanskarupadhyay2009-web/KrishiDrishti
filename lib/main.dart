@@ -3,14 +3,16 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'providers/assistant_provider.dart';
+import 'providers/crop_health_provider.dart';
 import 'providers/language_provider.dart';
 import 'providers/sensor_provider.dart';
 import 'services/voice_service.dart';
-import 'views/navigation_shell.dart';
+import 'views/splash_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: '.env');
+  debugPrint('Loaded GEMINI_API_KEY: ${dotenv.env['GEMINI_API_KEY']?.isNotEmpty == true ? 'yes' : 'no'}');
 
   runApp(
     MultiProvider(
@@ -18,6 +20,7 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (_) => LanguageProvider()),
         ChangeNotifierProvider(create: (_) => SensorProvider()),
         ChangeNotifierProvider(create: (_) => AssistantProvider()),
+        ChangeNotifierProvider(create: (_) => CropHealthProvider()),
         Provider(create: (_) => VoiceService()),
       ],
       child: const KrishiDrishtiApp(),
@@ -72,7 +75,7 @@ class KrishiDrishtiApp extends StatelessWidget {
           ),
         ),
       ),
-      home: const NavigationShell(),
+      home: const SplashScreen(),
     );
   }
 }

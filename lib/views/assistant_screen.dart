@@ -81,7 +81,9 @@ class _AssistantScreenState extends State<AssistantScreen> {
                 icon: const Icon(Icons.mic),
                 onPressed: () async {
                   await voiceService.listen(languageProvider.speechLocaleCode, (result) {
-                    _controller.text = result;
+                    setState(() {
+                      _controller.text = result;
+                    });
                   });
                 },
               ),

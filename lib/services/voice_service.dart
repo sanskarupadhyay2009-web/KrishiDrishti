@@ -1,6 +1,8 @@
 // lib/services/voice_service.dart
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 
 class VoiceService {
@@ -18,15 +20,26 @@ class VoiceService {
     }
   }
 
+  Future<bool> requestMicrophonePermission() async {
+    final status = await Permission.microphone.request();
+    return status.isGranted;
+  }
+
   Future<void> listen(String localeId, void Function(String) onResult) async {
     if (_isListening) {
       return;
     }
+    final granted = await requestMicrophonePermission();
+    if (!granted) {
+      return;
+    }
     final available = await initializeSpeech();
     if (!available) {
+      debugPrint('Speech recognition failed to initialize.');
       return;
     }
 
+    debugPrint('VoiceService: starting speech recognition.');
     _isListening = true;
     await _speechToText.listen(
       onResult: (result) {
@@ -46,6 +59,7 @@ class VoiceService {
       return;
     }
     _isListening = false;
+    debugPrint('VoiceService: stopping speech recognition.');
     await _speechToText.stop();
   }
 

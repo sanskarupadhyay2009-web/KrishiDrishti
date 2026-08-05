@@ -1,25 +1,81 @@
 // lib/services/gemini_service.dart
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:image_picker/image_picker.dart';
+
 import '../models/sensor_data.dart';
 
 class GeminiService {
-  late final GenerativeModel _model;
+  final GenerativeModel? _model;
 
-  GeminiService({String? apiKey}) {
-    final key = apiKey ?? dotenv.env['GEMINI_API_KEY'] ?? '';
+  GeminiService({String? apiKey}) : _model = _createModel(apiKey);
+
+  static GenerativeModel? _createModel(String? apiKey) {
+    final key = apiKey ?? dotenv.get('GEMINI_API_KEY', fallback: '');
+    debugPrint('GeminiService setup: key loaded=${key.isNotEmpty}, length=${key.length}');
     if (key.isEmpty) {
-      throw Exception('GEMINI_API_KEY is not set. Please add it to your .env file.');
+      debugPrint('Gemini API key is missing.');
+      return null;
     }
-    _model = GenerativeModel(model: 'gemini-1.5-flash', apiKey: key);
+    return GenerativeModel(model: 'gemini-pro', apiKey: key);
+  }
+
+  bool get isAvailable => _model != null;
+
+  String languageName(String languageCode) {
+    switch (languageCode) {
+      case 'hi':
+        return 'Hindi';
+      case 'mr':
+        return 'Marathi';
+      default:
+        return 'English';
+    }
+  }
+
+  Future<String> generateText(String prompt, String languageCode) async {
+    if (_model == null) {
+      return languageCode == 'hi'
+          ? 'जीमिनी एपीआई कुंजी उपलब्ध नहीं है। कृपया .env फ़ाइल में GEMINI_API_KEY जोड़ें।'
+          : languageCode == 'mr'
+              ? 'Gemini API की अनुपलब्ध आहे. कृपया .env फाइलमध्ये GEMINI_API_KEY जोडा.'
+              : 'Gemini API key is unavailable. Please add GEMINI_API_KEY to your .env file.';
+    }
+
+    try {
+      final response = await _model.generateContent([
+        Content.text(prompt),
+      ]);
+      return _responseText(response) ?? _defaultErrorMessage(languageCode);
+    } catch (e, stackTrace) {
+      debugPrint('Gemini generateText failed: $e');
+      debugPrint(stackTrace.toString());
+      return _defaultErrorMessage(languageCode);
+    }
   }
 
   Future<String> diagnoseCropImage(XFile imageFile, String languageCode) async {
+    final bytes = await imageFile.readAsBytes();
+    if (bytes.isEmpty) {
+      return languageCode == 'hi'
+          ? 'चयनित छवि अमान्य है। कृपया फिर से प्रयास करें।'
+          : languageCode == 'mr'
+              ? 'निवडलेली प्रतिमा अवैध आहे. कृपया पुन्हा प्रयत्न करा.'
+              : 'Selected image is invalid. Please try again.';
+    }
+
+    if (_model == null) {
+      return languageCode == 'hi'
+          ? 'जीमिनी एपीआई कुंजी उपलब्ध नहीं है। कृपया .env फ़ाइल में GEMINI_API_KEY जोड़ें।'
+          : languageCode == 'mr'
+              ? 'Gemini API की अनुपलब्ध आहे. कृपया .env फाइलमध्ये GEMINI_API_KEY जोडा.'
+              : 'Gemini API key is unavailable. Please add GEMINI_API_KEY to your .env file.';
+    }
+
     try {
-      final bytes = await imageFile.readAsBytes();
-      final promptText = '''Please examine this leaf image and provide the following information in ${_languageName(languageCode)}:
+      final promptText = '''Please examine this leaf image and provide the following information in ${languageName(languageCode)}:
 
 1. Disease Name
 2. Primary Cause
@@ -32,8 +88,10 @@ class GeminiService {
         ])
       ]);
 
-      return response.text ?? _defaultErrorMessage(languageCode);
-    } catch (_) {
+      return _responseText(response) ?? _defaultErrorMessage(languageCode);
+    } catch (e, stackTrace) {
+      debugPrint('Gemini Error: $e');
+      debugPrint(stackTrace.toString());
       return _defaultErrorMessage(languageCode);
     }
   }
@@ -44,6 +102,14 @@ class GeminiService {
     required String userQuestion,
     required String languageCode,
   }) async {
+    if (_model == null) {
+      return languageCode == 'hi'
+          ? 'जीमिनी एपीआई कुंजी उपलब्ध नहीं है। कृपया .env फ़ाइल में GEMINI_API_KEY जोड़ें।'
+          : languageCode == 'mr'
+              ? 'Gemini API की अनुपलब्ध आहे. कृपया .env फाइलमध्ये GEMINI_API_KEY जोडा.'
+              : 'Gemini API key is unavailable. Please add GEMINI_API_KEY to your .env file.';
+    }
+
     final prompt = '''You are a farming assistant. Respond strictly in the user's language: $languageCode.
 Use the latest sensor readings and weather details when answering.
 
@@ -64,21 +130,32 @@ User question: $userQuestion
       final response = await _model.generateContent([
         Content.text(prompt),
       ]);
-      return response.text ?? _defaultErrorMessage(languageCode);
-    } catch (_) {
+      return _responseText(response) ?? _defaultErrorMessage(languageCode);
+    } catch (e, stackTrace) {
+      debugPrint('Gemini Error: $e');
+      debugPrint(stackTrace.toString());
       return _defaultErrorMessage(languageCode);
     }
   }
 
-  String _languageName(String languageCode) {
-    switch (languageCode) {
-      case 'hi':
-        return 'Hindi';
-      case 'mr':
-        return 'Marathi';
-      default:
-        return 'English';
+  String? _responseText(GenerateContentResponse response) {
+    try {
+      final text = response.text;
+      if (text != null && text.isNotEmpty) {
+        return text;
+      }
+    } catch (e) {
+      debugPrint('response.text threw: $e');
     }
+
+    for (final candidate in response.candidates) {
+      for (final part in candidate.content.parts) {
+        if (part is TextPart && part.text.isNotEmpty) {
+          return part.text;
+        }
+      }
+    }
+    return null;
   }
 
   String _defaultErrorMessage(String languageCode) {
