@@ -51,7 +51,7 @@ class LanguagePage extends StatelessWidget {
                     Navigator.pushReplacement(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => const HomePage(isHindi: false),
+                        builder: (_) => const HomePage(),
                       ),
                     );
                   },
@@ -72,7 +72,7 @@ class LanguagePage extends StatelessWidget {
                     Navigator.pushReplacement(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => const HomePage(isHindi: true),
+                        builder: (_) => const HomePage(),
                       ),
                     );
                   },

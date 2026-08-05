@@ -1,7 +1,6 @@
 // Basic smoke test: verifies the app boots to the splash screen without
 // throwing, and that the app name is visible.
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
